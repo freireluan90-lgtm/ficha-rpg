@@ -1,0 +1,91 @@
+name: Publish Ficha Livre v2.3
+
+on:
+  push:
+    paths:
+      - 'release-sign/v23-ready'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download exact unsigned v2.3 build
+        uses: actions/download-artifact@v4
+        with:
+          name: ficha-livre-v2.3-unsigned
+          path: unsigned
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37298358750
+
+      - name: Reapply verified v2 signing block
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, struct
+
+          src = Path('unsigned/app-release-unsigned.apk')
+          out = Path('releases/Ficha-Livre-v2.3.apk')
+          block_file = Path('release-sign/v23-block.b64')
+          u = src.read_bytes()
+          assert hashlib.sha256(u).hexdigest() == '5441a2c53508372c8599fa1f3647fc09cb2f3e8ddb5fdeabdf68fc77569195d9'
+
+          def find_eocd(data):
+              pos = data.rfind(b'PK\x05\x06', max(0, len(data)-65557))
+              if pos < 0:
+                  raise RuntimeError('EOCD not found')
+              comment = struct.unpack_from('<H', data, pos+20)[0]
+              if pos + 22 + comment != len(data):
+                  raise RuntimeError('EOCD mismatch')
+              cd_size = struct.unpack_from('<I', data, pos+12)[0]
+              cd_off = struct.unpack_from('<I', data, pos+16)[0]
+              if cd_off + cd_size != pos:
+                  raise RuntimeError('central directory mismatch')
+              return pos, cd_off
+
+          eocd, cd_off = find_eocd(u)
+          block = base64.b64decode(block_file.read_text().strip())
+          assert len(block) == 1450
+          assert hashlib.sha256(block).hexdigest() == 'cc6773894b5d819cbc89579c6843e709c3be3ae4127d3edc4fd257dc6328a14f'
+          assert block[-16:] == b'APK Sig Block 42'
+
+          final_eocd = bytearray(u[eocd:])
+          struct.pack_into('<I', final_eocd, 16, cd_off + len(block))
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_bytes(u[:cd_off] + block + u[cd_off:eocd] + bytes(final_eocd))
+
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          assert digest == '5736b48acfd58f6c55f381cc9dda54e975198da7ab09f9f556c40502f6ed25c0', digest
+          print('Signed APK verified:', out, digest)
+          PY
+          unzip -t releases/Ficha-Livre-v2.3.apk
+
+      - name: Publish update manifest
+        run: |
+          cat > latest.json <<'JSON'
+          {
+            "version": "2.3",
+            "versionCode": 23,
+            "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.3.apk",
+            "sha256": "5736b48acfd58f6c55f381cc9dda54e975198da7ab09f9f556c40502f6ed25c0",
+            "notes": "PV e PE máximos, C.A. e MS automáticos. Todas as classes distribuem 4 pontos por nível entre PV e PE. Irregular também distribui 18 pontos de base entre PV e PE."
+          }
+          JSON
+
+      - name: Commit release
+        run: |
+          rm -rf release-parts/v23
+          rm -f release-sign/v23-ready
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A releases/Ficha-Livre-v2.3.apk latest.json release-parts/v23 release-sign/v23-ready
+          git commit -m 'Publica Ficha Livre v2.3'
+          git push
