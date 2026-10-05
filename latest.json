@@ -1,7 +1,7 @@
 {
-  "version": "2.4",
-  "versionCode": 24,
-  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.4.apk",
-  "sha256": "9377e0f0497660a98517e2e78abc7e07c069d758a2b3b1d0f5561a71c8c1efcd",
-  "notes": "Atualizador corrigido: a consulta de novas versões agora é feita pelo Android nativo. Mantém os cálculos automáticos de PV, PE, C.A. e MS e a distribuição de progressão da v2.3."
+  "version": "2.5",
+  "versionCode": 25,
+  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.5.apk",
+  "sha256": "c51d86f5ee052983f46aad0f4d93a5e381560e5c2999a844ead9dd3dde5ddebf",
+  "notes": "Corrige PV e PE para usar modificadores de FIS e INT, revisa C.A. e MS, adiciona Ascensão por estrela e mostra os valores passivos das perícias. Masterizada mantém a imunidade à desvantagem de Treinada e recebe +5 no passivo."
 }
