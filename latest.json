@@ -1,7 +1,7 @@
 {
-  "version": "2.2",
-  "versionCode": 22,
-  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.2.apk",
-  "sha256": "5198295a3fd82e522ba36bf5df3ca688473e5c8ba5d4f6bf726a704ff89421e1",
-  "notes": "Atualizador interno completo: procurar atualizações, baixar a nova versão e abrir o instalador do Android."
+  "version": "2.3",
+  "versionCode": 23,
+  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.3.apk",
+  "sha256": "5736b48acfd58f6c55f381cc9dda54e975198da7ab09f9f556c40502f6ed25c0",
+  "notes": "PV e PE máximos, C.A. e MS automáticos. Todas as classes distribuem 4 pontos por nível entre PV e PE. Irregular também distribui 18 pontos de base entre PV e PE."
 }
