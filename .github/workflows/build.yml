@@ -35,21 +35,25 @@ jobs:
         run: python scripts/v31_patch.py
       - name: Apply v3.2 compact skill-result patch
         run: python scripts/v32_patch.py
+      - name: Apply v3.3 clean combat-result patch
+        run: python scripts/v33_patch.py
       - name: Check embedded JavaScript
         run: |
           python - <<'PY'
           import re
           s=open('app/src/main/assets/Ficha.html',encoding='utf-8').read()
           m=re.search(r'<script>(.*)</script>',s,re.S)
-          assert m and "const APP_VERSION='3.2'" in s and 'id="hpGain"' in s and 'readUpdateManifest' in s
+          assert m and "const APP_VERSION='3.3'" in s and 'id="hpGain"' in s and 'readUpdateManifest' in s
           assert 'data-ascension' in s and 'hb+mod(fis)' in s and 'Masterizada · imune a desvantagem' in s
           assert 'Desfazer a Ascensão de' in s and 'c.passive[a]=false;c.attrs[a]=20' in s
           assert "passive=Math.min(15,(c.passive[a]?10:0)+(rank==='M'?5:0))" in s
           assert 'Soma dos ${d.n} testes' in s and '3d20+4 = 3 testes separados' in s
           assert 'class="total-detail"' in s and 'inlineDetail=`d=${raw}' in s
+          assert '<small>Resultado</small>${esc(r.lastRoll[f].total)}' not in s
+          assert '<div class="combat-inline-result" aria-live="polite">${esc(r.lastRoll[f].total)}</div>' in s
           open('/tmp/ficha.js','w',encoding='utf-8').write(m.group(1))
           j=open('app/src/main/java/br/com/luan/fichalivre/MainActivity.java',encoding='utf-8').read()
-          assert 'fetchUpdateManifest()' in j and 'return "3.2"' in j
+          assert 'fetchUpdateManifest()' in j and 'return "3.3"' in j
           PY
           node --check /tmp/ficha.js
       - name: Build
@@ -66,7 +70,7 @@ jobs:
           echo "Using $TOOL"
       - uses: actions/upload-artifact@v4
         with:
-          name: ficha-livre-v3.2-unsigned
+          name: ficha-livre-v3.3-unsigned
           path: app/build/outputs/apk/release/app-release-unsigned.apk
       - uses: actions/upload-artifact@v4
         with:
