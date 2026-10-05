@@ -31,18 +31,22 @@ jobs:
         run: python scripts/v26_patch.py
       - name: Apply v3.0 definitive-base patch
         run: python scripts/v30_patch.py
+      - name: Apply v3.1 passive and multiple-tests patch
+        run: python scripts/v31_patch.py
       - name: Check embedded JavaScript
         run: |
           python - <<'PY'
           import re
           s=open('app/src/main/assets/Ficha.html',encoding='utf-8').read()
           m=re.search(r'<script>(.*)</script>',s,re.S)
-          assert m and "const APP_VERSION='3.0'" in s and 'id="hpGain"' in s and 'readUpdateManifest' in s
+          assert m and "const APP_VERSION='3.1'" in s and 'id="hpGain"' in s and 'readUpdateManifest' in s
           assert 'data-ascension' in s and 'hb+mod(fis)' in s and 'Masterizada · imune a desvantagem' in s
           assert 'Desfazer a Ascensão de' in s and 'c.passive[a]=false;c.attrs[a]=20' in s
+          assert "passive=Math.min(15,(c.passive[a]?10:0)+(rank==='M'?5:0))" in s
+          assert 'Soma dos ${d.n} testes' in s and '3d20+4 = 3 testes separados' in s
           open('/tmp/ficha.js','w',encoding='utf-8').write(m.group(1))
           j=open('app/src/main/java/br/com/luan/fichalivre/MainActivity.java',encoding='utf-8').read()
-          assert 'fetchUpdateManifest()' in j and 'return "3.0"' in j
+          assert 'fetchUpdateManifest()' in j and 'return "3.1"' in j
           PY
           node --check /tmp/ficha.js
       - name: Build
@@ -59,7 +63,7 @@ jobs:
           echo "Using $TOOL"
       - uses: actions/upload-artifact@v4
         with:
-          name: ficha-livre-v3.0-unsigned
+          name: ficha-livre-v3.1-unsigned
           path: app/build/outputs/apk/release/app-release-unsigned.apk
       - uses: actions/upload-artifact@v4
         with:
