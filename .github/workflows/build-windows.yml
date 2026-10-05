@@ -1,0 +1,88 @@
+name: Build Windows PC
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'pc/**'
+      - '.github/workflows/build-windows.yml'
+      - 'scripts/v23_patch.py'
+      - 'scripts/v24_updater_patch.py'
+      - 'scripts/v25_patch.py'
+      - 'scripts/v26_patch.py'
+      - 'scripts/v30_patch.py'
+      - 'payload/**'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Restore app sources
+        shell: pwsh
+        run: |
+          @'
+          from pathlib import Path
+          import base64, gzip
+          Path('app/src/main/assets').mkdir(parents=True, exist_ok=True)
+          Path('app/src/main/java/br/com/luan/fichalivre').mkdir(parents=True, exist_ok=True)
+          parts=sorted(Path('payload').glob('Ficha.html.gz.b64.*'))
+          b64=''.join(p.read_text(encoding='utf-8').strip() for p in parts)
+          Path('app/src/main/assets/Ficha.html').write_bytes(gzip.decompress(base64.b64decode(b64)))
+          jb64=Path('payload/MainActivity.java.gz.b64').read_text(encoding='utf-8').strip()
+          Path('app/src/main/java/br/com/luan/fichalivre/MainActivity.java').write_bytes(gzip.decompress(base64.b64decode(jb64)))
+          '@ | python -
+
+      - name: Apply current Ficha Livre patches
+        run: |
+          python scripts/v23_patch.py
+          python scripts/v24_updater_patch.py
+          python scripts/v25_patch.py
+          python scripts/v26_patch.py
+          python scripts/v30_patch.py
+
+      - name: Prepare PC HTML
+        shell: pwsh
+        run: |
+          Copy-Item app/src/main/assets/Ficha.html pc/Ficha.html -Force
+          @'
+          from pathlib import Path
+          p=Path('pc/Ficha.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('Versão instalada: <b>3.0</b> · nova base com assinatura definitiva','Versão PC: <b>3.0</b> · edição Windows portátil')
+          s=s.replace('<title>Ficha Livre</title>','<title>Ficha Livre - PC</title>')
+          p.write_text(s,encoding='utf-8')
+          assert "const APP_VERSION='3.0'" in s
+          '@ | python -
+
+      - name: Install Electron packaging dependencies
+        working-directory: pc
+        run: npm install --no-audit --no-fund
+
+      - name: Build portable Windows executable
+        working-directory: pc
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist
+
+      - name: Verify executable exists
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem pc/dist -Filter 'Ficha-Livre-PC-v3.0.0.exe' | Select-Object -First 1
+          if (-not $exe) { throw 'Executável não encontrado' }
+          Write-Host "Built: $($exe.FullName) - $($exe.Length) bytes"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Ficha-Livre-PC-v3.0.0
+          path: pc/dist/Ficha-Livre-PC-v3.0.0.exe
+          if-no-files-found: error
