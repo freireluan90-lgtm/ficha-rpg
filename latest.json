@@ -1,7 +1,7 @@
 {
-  "version": "2.3",
-  "versionCode": 23,
-  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.3.apk",
-  "sha256": "5736b48acfd58f6c55f381cc9dda54e975198da7ab09f9f556c40502f6ed25c0",
-  "notes": "PV e PE máximos, C.A. e MS automáticos. Todas as classes distribuem 4 pontos por nível entre PV e PE. Irregular também distribui 18 pontos de base entre PV e PE."
+  "version": "2.4",
+  "versionCode": 24,
+  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.4.apk",
+  "sha256": "9377e0f0497660a98517e2e78abc7e07c069d758a2b3b1d0f5561a71c8c1efcd",
+  "notes": "Atualizador corrigido: a consulta de novas versões agora é feita pelo Android nativo. Mantém os cálculos automáticos de PV, PE, C.A. e MS e a distribuição de progressão da v2.3."
 }
