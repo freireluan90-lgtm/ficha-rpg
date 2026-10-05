@@ -23,19 +23,23 @@ jobs:
           base64 -d payload/MainActivity.java.gz.b64 | gzip -d > app/src/main/java/br/com/luan/fichalivre/MainActivity.java
       - name: Apply v2.3 progression patch
         run: python scripts/v23_patch.py
+      - name: Apply v2.4 native updater patch
+        run: python scripts/v24_updater_patch.py
       - name: Check embedded JavaScript
         run: |
           python - <<'PY'
           import re
           s=open('app/src/main/assets/Ficha.html',encoding='utf-8').read()
           m=re.search(r'<script>(.*)</script>',s,re.S)
-          assert m and "const APP_VERSION='2.3'" in s and 'id="hpGain"' in s
+          assert m and "const APP_VERSION='2.4'" in s and 'id="hpGain"' in s and 'readUpdateManifest' in s
           open('/tmp/ficha.js','w',encoding='utf-8').write(m.group(1))
+          j=open('app/src/main/java/br/com/luan/fichalivre/MainActivity.java',encoding='utf-8').read()
+          assert 'fetchUpdateManifest()' in j and 'return "2.4"' in j
           PY
           node --check /tmp/ficha.js
       - name: Build
         run: gradle --no-daemon :app:assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: ficha-livre-v2.3-unsigned
+          name: ficha-livre-v2.4-unsigned
           path: app/build/outputs/apk/release/app-release-unsigned.apk
