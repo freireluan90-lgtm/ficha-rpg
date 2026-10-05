@@ -1,4 +1,4 @@
-name: Inspect dice source
+name: Inspect skill result source
 on:
   push:
     paths:
@@ -21,23 +21,24 @@ jobs:
           python scripts/v25_patch.py
           python scripts/v26_patch.py
           python scripts/v30_patch.py
-      - name: Show dice-related source
+          python scripts/v31_patch.py
+      - name: Show skill-result source
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
           s=Path('app/src/main/assets/Ficha.html').read_text(encoding='utf-8')
-          pats=[r'function\s+\w*roll\w*\s*\([^)]*\)\s*\{',r'function\s+\w*dice\w*\s*\([^)]*\)\s*\{',r'\bdice\b',r'\bd20\b',r'rollExpr',r'parseDice',r'oracle',r'history']
+          pats=[r"#skills",r"data-skill",r"Resultado",r"lastRoll",r"switchToDice",r"function renderSkills"]
           spans=[]
           for p in pats:
               for m in re.finditer(p,s,re.I):
-                  spans.append((max(0,m.start()-700),min(len(s),m.start()+2200)))
+                  spans.append((max(0,m.start()-900),min(len(s),m.start()+2600)))
           merged=[]
           for a,b in sorted(spans):
               if not merged or a>merged[-1][1]: merged.append([a,b])
               else: merged[-1][1]=max(merged[-1][1],b)
           print('MATCHED SPANS',len(merged))
-          for i,(a,b) in enumerate(merged[:20]):
+          for i,(a,b) in enumerate(merged[:30]):
               print(f'\n===== SPAN {i} {a}:{b} =====\n')
               print(s[a:b])
           PY
