@@ -1,0 +1,118 @@
+name: Publish Ficha Livre v3.2
+
+on:
+  push:
+    paths:
+      - 'release-sign/v32-ready'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download exact unsigned v3.2 build
+        uses: actions/download-artifact@v4
+        with:
+          name: ficha-livre-v3.2-unsigned
+          path: unsigned
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37350825493
+
+      - name: Download apksigner verifier
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apksigner-tool
+          path: apksigner-tool
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37350825493
+
+      - name: Reapply verified definitive signing block
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, struct
+
+          src = Path('unsigned/app-release-unsigned.apk')
+          out = Path('releases/Ficha-Livre-v3.2.apk')
+          block_file = Path('release-sign/v32-block.b64')
+          u = bytearray(src.read_bytes())
+          assert hashlib.sha256(u).hexdigest() == '68457e78ba27800ba0aa7b8519c77b53ada91ec14872444ca930ea2659934ae6'
+
+          def find_eocd(data):
+              pos = bytes(data).rfind(b'PK\x05\x06', max(0, len(data)-65557))
+              if pos < 0:
+                  raise RuntimeError('EOCD not found')
+              comment = struct.unpack_from('<H', data, pos+20)[0]
+              if pos + 22 + comment != len(data):
+                  raise RuntimeError('EOCD mismatch')
+              cd_size = struct.unpack_from('<I', data, pos+12)[0]
+              cd_off = struct.unpack_from('<I', data, pos+16)[0]
+              if cd_off + cd_size != pos:
+                  raise RuntimeError('central directory mismatch')
+              return pos, cd_off
+
+          eocd, cd_off = find_eocd(u)
+          assert cd_off == 32420
+
+          # apksigner aligns the last local ZIP entry before adding the APK Signing Block.
+          # These are the exact deterministic byte adjustments produced for this unsigned build.
+          patches = {
+              32361:7, 32377:53, 32378:217, 32379:3, 32380:0, 32381:4, 32382:0,
+              32384:2, 32386:12, 32388:40, 32392:0, 32394:0, 32396:1,
+              32398:28, 32400:28, 32409:0, 32412:0, 32413:1, 32416:28,
+          }
+          for off, val in patches.items():
+              u[off] = val
+
+          pad = b'\x00' * 348
+          block = base64.b64decode(block_file.read_text().strip())
+          assert len(block) == 8192
+          assert hashlib.sha256(block).hexdigest() == '72df9d9663868ae63b410e12ee915150666fc95026acbcf4bb8c6206f2f86f93'
+          assert block[-16:] == b'APK Sig Block 42'
+
+          final_eocd = bytearray(u[eocd:])
+          struct.pack_into('<I', final_eocd, 16, cd_off + len(pad) + len(block))
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_bytes(bytes(u[:cd_off]) + pad + block + bytes(u[cd_off:eocd]) + bytes(final_eocd))
+
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          assert digest == '89d68c32627472fb97cd5d9b744c239999d9f3463ab2028ca3ddef8e95986dde', digest
+          print('APK reconstructed:', digest)
+          PY
+          unzip -t releases/Ficha-Livre-v3.2.apk
+          chmod +x apksigner-tool/apksigner
+          apksigner-tool/apksigner verify --verbose --print-certs releases/Ficha-Livre-v3.2.apk | tee /tmp/apkverify.txt
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' /tmp/apkverify.txt
+          grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' /tmp/apkverify.txt
+          grep -qi '1b7c3163a05fde6187b44604f915e5c69b36e7b443edd33f6b6b9ea425be3c76' /tmp/apkverify.txt
+
+      - name: Publish update manifest
+        run: |
+          cat > latest.json <<'JSON'
+          {
+            "version": "3.2",
+            "versionCode": 32,
+            "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v3.2.apk",
+            "sha256": "89d68c32627472fb97cd5d9b744c239999d9f3463ab2028ca3ddef8e95986dde",
+            "signingCertSha256": "1b7c3163a05fde6187b44604f915e5c69b36e7b443edd33f6b6b9ea425be3c76",
+            "notes": "Passivos corrigidos: Ascensão +10 e Masterizada +5, máximo 15, sem modificador do atributo. Testes como 3d20+4 são separados e somados ao final. O resultado de perícia agora aparece de forma compacta, como 16 (d=13+3)."
+          }
+          JSON
+
+      - name: Commit release
+        run: |
+          rm -f release-sign/v32-ready
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A releases/Ficha-Livre-v3.2.apk latest.json release-sign/v32-ready
+          git commit -m 'Publica Ficha Livre v3.2'
+          git push
