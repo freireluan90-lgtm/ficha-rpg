@@ -12,6 +12,7 @@ on:
       - 'scripts/v26_patch.py'
       - 'scripts/v30_patch.py'
       - 'scripts/v31_patch.py'
+      - 'scripts/v32_patch.py'
       - 'payload/**'
 
 jobs:
@@ -51,6 +52,7 @@ jobs:
           python scripts/v26_patch.py
           python scripts/v30_patch.py
           python scripts/v31_patch.py
+          python scripts/v32_patch.py
 
       - name: Prepare PC HTML
         shell: pwsh
@@ -60,12 +62,13 @@ jobs:
           from pathlib import Path
           p=Path('pc/Ficha.html')
           s=p.read_text(encoding='utf-8')
-          s=s.replace('Versão instalada: <b>3.1</b> · passivos e testes múltiplos corrigidos','Versão PC: <b>3.1</b> · edição Windows portátil')
+          s=s.replace('Versão instalada: <b>3.2</b> · resultado de perícia mais compacto','Versão PC: <b>3.2</b> · edição Windows portátil')
           s=s.replace('<title>Ficha Livre</title>','<title>Ficha Livre - PC</title>')
           p.write_text(s,encoding='utf-8')
-          assert "const APP_VERSION='3.1'" in s
+          assert "const APP_VERSION='3.2'" in s
           assert "passive=Math.min(15,(c.passive[a]?10:0)+(rank==='M'?5:0))" in s
           assert 'Soma dos ${d.n} testes' in s
+          assert 'class="total-detail"' in s
           '@ | python -
 
       - name: Install Electron packaging dependencies
@@ -81,12 +84,12 @@ jobs:
       - name: Verify executable exists
         shell: pwsh
         run: |
-          $exe = Get-ChildItem pc/dist -Filter 'Ficha-Livre-PC-v3.1.0.exe' | Select-Object -First 1
+          $exe = Get-ChildItem pc/dist -Filter 'Ficha-Livre-PC-v3.2.0.exe' | Select-Object -First 1
           if (-not $exe) { throw 'Executável não encontrado' }
           Write-Host "Built: $($exe.FullName) - $($exe.Length) bytes"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Ficha-Livre-PC-v3.1.0
-          path: pc/dist/Ficha-Livre-PC-v3.1.0.exe
+          name: Ficha-Livre-PC-v3.2.0
+          path: pc/dist/Ficha-Livre-PC-v3.2.0.exe
           if-no-files-found: error
