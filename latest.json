@@ -1,0 +1,7 @@
+{
+  "version": "2.2",
+  "versionCode": 22,
+  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.2.apk",
+  "sha256": "5198295a3fd82e522ba36bf5df3ca688473e5c8ba5d4f6bf726a704ff89421e1",
+  "notes": "Atualizador interno completo: procurar atualizações, baixar a nova versão e abrir o instalador do Android."
+}
