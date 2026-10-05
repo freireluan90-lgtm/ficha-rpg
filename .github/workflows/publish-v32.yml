@@ -43,7 +43,6 @@ jobs:
 
           src = Path('unsigned/app-release-unsigned.apk')
           out = Path('releases/Ficha-Livre-v3.2.apk')
-          block_file = Path('release-sign/v32-block.b64')
           u = bytearray(src.read_bytes())
           assert hashlib.sha256(u).hexdigest() == '68457e78ba27800ba0aa7b8519c77b53ada91ec14872444ca930ea2659934ae6'
 
@@ -63,8 +62,6 @@ jobs:
           eocd, cd_off = find_eocd(u)
           assert cd_off == 32420
 
-          # apksigner aligns the last local ZIP entry before adding the APK Signing Block.
-          # These are the exact deterministic byte adjustments produced for this unsigned build.
           patches = {
               32361:7, 32377:53, 32378:217, 32379:3, 32380:0, 32381:4, 32382:0,
               32384:2, 32386:12, 32388:40, 32392:0, 32394:0, 32396:1,
@@ -74,8 +71,12 @@ jobs:
               u[off] = val
 
           pad = b'\x00' * 348
-          block = base64.b64decode(block_file.read_text().strip())
-          assert len(block) == 8192
+          block_b64 = ''.join([
+              Path('release-sign/v32-block.part00').read_text().strip(),
+              Path('release-sign/v32-block.part01').read_text().strip(),
+          ])
+          block = base64.b64decode(block_b64)
+          assert len(block) == 8192, len(block)
           assert hashlib.sha256(block).hexdigest() == '72df9d9663868ae63b410e12ee915150666fc95026acbcf4bb8c6206f2f86f93'
           assert block[-16:] == b'APK Sig Block 42'
 
