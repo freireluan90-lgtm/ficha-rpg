@@ -1,7 +1,8 @@
 {
-  "version": "2.5",
-  "versionCode": 25,
-  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.5.apk",
-  "sha256": "c51d86f5ee052983f46aad0f4d93a5e381560e5c2999a844ead9dd3dde5ddebf",
-  "notes": "Corrige PV e PE para usar modificadores de FIS e INT, revisa C.A. e MS, adiciona Ascensão por estrela e mostra os valores passivos das perícias. Masterizada mantém a imunidade à desvantagem de Treinada e recebe +5 no passivo."
+  "version": "3.0",
+  "versionCode": 30,
+  "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v3.0.apk",
+  "sha256": "bed00715ddfec00e66423ef28886c3d3d1c01bf21b18afa3efca220c0e5301ab",
+  "signingCertSha256": "1b7c3163a05fde6187b44604f915e5c69b36e7b443edd33f6b6b9ea425be3c76",
+  "notes": "Nova base v3.0 com chave de assinatura definitiva. Inclui cálculos automáticos de PV/PE, C.A. e MS, progressão editável, perícias passivas, Masterizada mantendo os efeitos de Treinada e Ascensão reversível com confirmação. A migração da linha antiga exige desinstalação uma única vez."
 }
