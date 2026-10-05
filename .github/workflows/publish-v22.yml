@@ -1,0 +1,54 @@
+name: Publish Ficha Livre v2.2
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'release_payload/READY'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebuild signed APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p releases
+          cat release_payload/v2.2.part* | tr -d '\r\n' | base64 -d > releases/Ficha-Livre-v2.2.apk
+          echo '5198295a3fd82e522ba36bf5df3ca688473e5c8ba5d4f6bf726a704ff89421e1  releases/Ficha-Livre-v2.2.apk' | sha256sum -c -
+
+      - name: Write update manifest
+        shell: bash
+        run: |
+          cat > latest.json <<'EOF'
+          {
+            "version": "2.2",
+            "versionCode": 22,
+            "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v2.2.apk",
+            "sha256": "5198295a3fd82e522ba36bf5df3ca688473e5c8ba5d4f6bf726a704ff89421e1",
+            "notes": "Atualizador interno completo: procurar atualizações, baixar a nova versão e abrir o instalador do Android."
+          }
+          EOF
+
+      - name: Publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'Ficha Livre Updater'
+          git config user.email 'actions@users.noreply.github.com'
+          git add releases/Ficha-Livre-v2.2.apk latest.json
+          if git diff --cached --quiet; then
+            echo 'Nothing to publish.'
+          else
+            git commit -m 'Publica Ficha Livre v2.2'
+            git push origin HEAD:main
+          fi
