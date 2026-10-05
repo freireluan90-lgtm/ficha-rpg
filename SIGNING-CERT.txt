@@ -1,0 +1,12 @@
+FICHA LIVRE - CERTIFICADO DE ASSINATURA DEFINITIVO
+
+Linha oficial: v3.0+
+Pacote Android: br.com.luan.fichalivre
+Alias interno: ficha-livre
+Algoritmo: RSA 4096 / SHA256withRSA
+Validade: 05/10/2026 até 11/09/2126
+
+SHA-256 do certificado:
+1B:7C:31:63:A0:5F:DE:61:87:B4:46:04:F9:15:E5:C6:9B:36:E7:B4:43:ED:D3:3F:6B:6B:9E:A4:25:BE:3C:76
+
+A chave privada correspondente NÃO fica neste repositório público. Ela está guardada separadamente e deve ser reutilizada em todas as próximas versões.
