@@ -14,6 +14,7 @@ on:
       - 'scripts/v31_patch.py'
       - 'scripts/v32_patch.py'
       - 'scripts/v33_patch.py'
+      - 'scripts/v34_patch.py'
       - 'payload/**'
 
 jobs:
@@ -55,6 +56,7 @@ jobs:
           python scripts/v31_patch.py
           python scripts/v32_patch.py
           python scripts/v33_patch.py
+          python scripts/v34_patch.py
 
       - name: Prepare PC HTML
         shell: pwsh
@@ -64,14 +66,16 @@ jobs:
           from pathlib import Path
           p=Path('pc/Ficha.html')
           s=p.read_text(encoding='utf-8')
-          s=s.replace('Versão instalada: <b>3.3</b> · resultados de combate mais limpos','Versão PC: <b>3.3</b> · edição Windows portátil')
+          s=s.replace('Versão instalada: <b>3.4</b> · resultados detalhados em combate','Versão PC: <b>3.4</b> · edição Windows portátil')
           s=s.replace('<title>Ficha Livre</title>','<title>Ficha Livre - PC</title>')
           p.write_text(s,encoding='utf-8')
-          assert "const APP_VERSION='3.3'" in s
+          assert "const APP_VERSION='3.4'" in s
           assert "passive=Math.min(15,(c.passive[a]?10:0)+(rank==='M'?5:0))" in s
           assert 'Soma dos ${d.n} testes' in s
           assert 'class="total-detail"' in s
-          assert '<small>Resultado</small>${esc(r.lastRoll[f].total)}' not in s
+          assert 'combatText=`${total} (${inlineDetail})`' in s
+          assert 'combatText:entry.combatText' in s
+          assert 'r.lastRoll[f].combatText||r.lastRoll[f].total' in s
           '@ | python -
 
       - name: Install Electron packaging dependencies
@@ -87,12 +91,12 @@ jobs:
       - name: Verify executable exists
         shell: pwsh
         run: |
-          $exe = Get-ChildItem pc/dist -Filter 'Ficha-Livre-PC-v3.3.0.exe' | Select-Object -First 1
+          $exe = Get-ChildItem pc/dist -Filter 'Ficha-Livre-PC-v3.4.0.exe' | Select-Object -First 1
           if (-not $exe) { throw 'Executável não encontrado' }
           Write-Host "Built: $($exe.FullName) - $($exe.Length) bytes"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Ficha-Livre-PC-v3.3.0
-          path: pc/dist/Ficha-Livre-PC-v3.3.0.exe
+          name: Ficha-Livre-PC-v3.4.0
+          path: pc/dist/Ficha-Livre-PC-v3.4.0.exe
           if-no-files-found: error
