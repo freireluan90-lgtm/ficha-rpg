@@ -1,0 +1,43 @@
+name: Inspect dice source
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-dice.yml'
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore sources
+        run: |
+          mkdir -p app/src/main/assets app/src/main/java/br/com/luan/fichalivre
+          cat payload/Ficha.html.gz.b64.* | base64 -d | gzip -d > app/src/main/assets/Ficha.html
+          base64 -d payload/MainActivity.java.gz.b64 | gzip -d > app/src/main/java/br/com/luan/fichalivre/MainActivity.java
+      - name: Apply patches
+        run: |
+          python scripts/v23_patch.py
+          python scripts/v24_updater_patch.py
+          python scripts/v25_patch.py
+          python scripts/v26_patch.py
+          python scripts/v30_patch.py
+      - name: Show dice-related source
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          s=Path('app/src/main/assets/Ficha.html').read_text(encoding='utf-8')
+          pats=[r'function\s+\w*roll\w*\s*\([^)]*\)\s*\{',r'function\s+\w*dice\w*\s*\([^)]*\)\s*\{',r'\bdice\b',r'\bd20\b',r'rollExpr',r'parseDice',r'oracle',r'history']
+          spans=[]
+          for p in pats:
+              for m in re.finditer(p,s,re.I):
+                  spans.append((max(0,m.start()-700),min(len(s),m.start()+2200)))
+          merged=[]
+          for a,b in sorted(spans):
+              if not merged or a>merged[-1][1]: merged.append([a,b])
+              else: merged[-1][1]=max(merged[-1][1],b)
+          print('MATCHED SPANS',len(merged))
+          for i,(a,b) in enumerate(merged[:20]):
+              print(f'\n===== SPAN {i} {a}:{b} =====\n')
+              print(s[a:b])
+          PY
