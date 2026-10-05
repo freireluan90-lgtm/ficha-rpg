@@ -21,6 +21,19 @@ jobs:
           mkdir -p app/src/main/assets app/src/main/java/br/com/luan/fichalivre
           cat payload/Ficha.html.gz.b64.* | base64 -d | gzip -d > app/src/main/assets/Ficha.html
           base64 -d payload/MainActivity.java.gz.b64 | gzip -d > app/src/main/java/br/com/luan/fichalivre/MainActivity.java
+      - name: Inspect class and derived-stat fields
+        run: |
+          python - <<'PY'
+          import re
+          p='app/src/main/assets/Ficha.html'
+          s=open(p,encoding='utf-8').read()
+          terms=['Irregular','PV','PE','C.A','CA','MS','classe','Classe','ganho','nível','nivel','level']
+          for term in terms:
+              print('\n###',term)
+              for m in list(re.finditer(re.escape(term),s,re.I))[:30]:
+                  a=max(0,m.start()-220); b=min(len(s),m.end()+420)
+                  print(s[a:b].replace('\n',' '))
+          PY
       - name: Build
         run: gradle --no-daemon :app:assembleRelease
       - uses: actions/upload-artifact@v4
