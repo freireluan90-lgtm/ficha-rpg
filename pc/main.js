@@ -42,7 +42,7 @@ function createWindow() {
         const check = document.getElementById('checkUpdate');
         if (check) { check.disabled = true; check.style.display = 'none'; }
         const st = document.getElementById('updateStatus');
-        if (st) st.innerHTML = 'Versão PC: <b>3.0</b> · edição Windows portátil';
+        if (st) st.innerHTML = 'Versão PC: <b>3.6</b> · edição Windows portátil';
       })();
     `).catch(() => {});
   });
