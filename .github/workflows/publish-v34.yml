@@ -1,0 +1,109 @@
+name: Publish Ficha Livre v3.4
+
+on:
+  push:
+    paths:
+      - 'release-sign/v34-ready'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download exact unsigned v3.4 build
+        uses: actions/download-artifact@v4
+        with:
+          name: ficha-livre-v3.4-unsigned
+          path: unsigned
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37367150559
+
+      - name: Download apksigner verifier
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apksigner-tool
+          path: apksigner-tool
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: 37367150559
+
+      - name: Reconstruct verified signed v3.4 APK
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib
+
+          src = Path('unsigned/app-release-unsigned.apk')
+          out = Path('releases/Ficha-Livre-v3.4.apk')
+          u = bytearray(src.read_bytes())
+          assert hashlib.sha256(u).hexdigest() == '16dc94f27060264793ae2e49e1a12ba03c700f09b48186dc080e912e71ffeb04'
+
+          cut = 32588
+          patches = {
+              32530: 6,
+              32546: 53,
+              32547: 217,
+              32550: 4,
+              32552: 2,
+              32554: 12,
+              32556: 40,
+              32560: 0,
+              32562: 0,
+              32564: 1,
+              32566: 28,
+              32568: 28,
+              32577: 0,
+              32580: 0,
+              32581: 1,
+              32584: 28,
+          }
+          for off, val in patches.items():
+              u[off] = val
+
+          suffix = base64.b64decode(Path('release-sign/v34-suffix.b64').read_text().strip())
+          assert len(suffix) == 13122
+          assert hashlib.sha256(suffix).hexdigest() == '612ecf82932cddbb5babcd8602ab7b85cb1cab2b8ecfe5f4d8b11682e992c62f'
+
+          out.parent.mkdir(parents=True, exist_ok=True)
+          out.write_bytes(bytes(u[:cut]) + suffix)
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          assert digest == 'a6953f6f9e807d6d67ceb5112870934070111a43454df24adbd93260608c682b', digest
+          print('APK reconstructed:', digest)
+          PY
+
+          unzip -t releases/Ficha-Livre-v3.4.apk
+          chmod +x apksigner-tool/apksigner
+          apksigner-tool/apksigner verify --verbose --print-certs releases/Ficha-Livre-v3.4.apk | tee /tmp/apkverify.txt
+          grep -q 'Verified using v2 scheme (APK Signature Scheme v2): true' /tmp/apkverify.txt
+          grep -q 'Verified using v3 scheme (APK Signature Scheme v3): true' /tmp/apkverify.txt
+          grep -qi '1b7c3163a05fde6187b44604f915e5c69b36e7b443edd33f6b6b9ea425be3c76' /tmp/apkverify.txt
+
+      - name: Publish update manifest
+        run: |
+          cat > latest.json <<'JSON'
+          {
+            "version": "3.4",
+            "versionCode": 34,
+            "apk": "https://raw.githubusercontent.com/freireluan90-lgtm/ficha-rpg/main/releases/Ficha-Livre-v3.4.apk",
+            "sha256": "a6953f6f9e807d6d67ceb5112870934070111a43454df24adbd93260608c682b",
+            "signingCertSha256": "1b7c3163a05fde6187b44604f915e5c69b36e7b443edd33f6b6b9ea425be3c76",
+            "notes": "Resultados de Acerto, Dano e Dano Crítico agora exibem o total e a composição dos dados. Exemplo: 19 (d=15+4). Testes múltiplos como 3d20+4 continuam separados e mostram cada teste individualmente, além da soma."
+          }
+          JSON
+
+      - name: Commit release
+        run: |
+          rm -f release-sign/v34-ready
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A releases/Ficha-Livre-v3.4.apk latest.json release-sign/v34-ready
+          git commit -m 'Publica Ficha Livre v3.4'
+          git push
